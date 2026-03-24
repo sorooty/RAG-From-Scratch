@@ -1,3 +1,5 @@
+# rag_app.py - main RAG app file (streamlit ui & logic all in one)
+
 import os
 import uuid
 from pathlib import Path
@@ -26,9 +28,8 @@ CHROMA_DIR = DATA_DIR / "chroma"
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 
-# =========================
-# INIT
-# =========================
+# INIT Phase - config
+
 st.set_page_config(page_title="Mini RAG Demo", page_icon=":books:", layout="wide")
 
 
@@ -48,9 +49,7 @@ openai_client = get_openai_client()
 collection = get_chroma_collection()
 
 
-# =========================
-# UTILS
-# =========================
+# Utils - core functions of the RAG system
 def extract_text_from_pdf(pdf_path: Path) -> str:
     reader = PdfReader(str(pdf_path))
     pages_text = []
@@ -152,6 +151,8 @@ def build_messages(user_question: str, retrieved_chunks):
         "Réponds uniquement à partir du contexte récupéré. "
         "Si l'information n'est pas présente dans le contexte, dis clairement que tu ne sais pas. "
         "À la fin, indique les sources utilisées."
+        "Tu dois t'adapter à l'utilisateur selon la langue avec laquelle il te parle (anglais, français, ...)"
+        "Répond correctement dans la langue adaptée."
     )
 
     user_message = f"""
@@ -180,15 +181,11 @@ def answer_with_rag(user_question: str):
     return answer, retrieved_chunks
 
 
-# =========================
-# SESSION STATE
-# =========================
+# STREAMLIT - State Mgmt.
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# =========================
-# UI
-# =========================
+# STREAMLIT - UI
 st.title(":books: Mini RAG Demo")
 st.write("Importe des PDF puis pose des questions dessus.")
 
