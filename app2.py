@@ -15,7 +15,9 @@ load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
-OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small").strip()
+OPENAI_EMBEDDING_MODEL = os.getenv(
+    "OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"
+).strip()
 
 DATA_DIR = Path("data")
 PDF_DIR = DATA_DIR / "pdfs"
@@ -29,9 +31,11 @@ CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 # =========================
 st.set_page_config(page_title="Mini RAG Demo", page_icon=":books:", layout="wide")
 
+
 @st.cache_resource
 def get_openai_client():
     return OpenAI(api_key=OPENAI_API_KEY)
+
 
 @st.cache_resource
 def get_chroma_collection():
@@ -39,8 +43,10 @@ def get_chroma_collection():
     collection = client.get_or_create_collection(name="rag_demo")
     return collection
 
+
 openai_client = get_openai_client()
 collection = get_chroma_collection()
+
 
 # =========================
 # UTILS
@@ -55,6 +61,7 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
             pages_text.append(text)
 
     return "\n".join(pages_text).strip()
+
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200):
     """
@@ -74,19 +81,20 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200):
 
     return chunks
 
+
 def embed_texts(texts: list[str]) -> list[list[float]]:
     response = openai_client.embeddings.create(
-        model=OPENAI_EMBEDDING_MODEL,
-        input=texts
+        model=OPENAI_EMBEDDING_MODEL, input=texts
     )
     return [item.embedding for item in response.data]
 
+
 def embed_query(text: str) -> list[float]:
     response = openai_client.embeddings.create(
-        model=OPENAI_EMBEDDING_MODEL,
-        input=[text]
+        model=OPENAI_EMBEDDING_MODEL, input=[text]
     )
     return response.data[0].embedding
+
 
 def add_pdf_to_vectorstore(pdf_path: Path) -> int:
     text = extract_text_from_pdf(pdf_path)
@@ -99,39 +107,36 @@ def add_pdf_to_vectorstore(pdf_path: Path) -> int:
 
     ids = [str(uuid.uuid4()) for _ in chunks]
     metadatas = [
-        {"source": pdf_path.name, "chunk_index": i}
-        for i in range(len(chunks))
+        {"source": pdf_path.name, "chunk_index": i} for i in range(len(chunks))
     ]
 
     collection.add(
-        ids=ids,
-        documents=chunks,
-        embeddings=embeddings,
-        metadatas=metadatas
+        ids=ids, documents=chunks, embeddings=embeddings, metadatas=metadatas
     )
 
     return len(chunks)
 
+
 def search_relevant_chunks(query: str, top_k: int = 4):
     query_embedding = embed_query(query)
 
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k
-    )
+    results = collection.query(query_embeddings=[query_embedding], n_results=top_k)
 
     documents = results.get("documents", [[]])[0]
     metadatas = results.get("metadatas", [[]])[0]
 
     retrieved = []
     for doc, meta in zip(documents, metadatas):
-        retrieved.append({
-            "text": doc,
-            "source": meta.get("source", "unknown"),
-            "chunk_index": meta.get("chunk_index", -1),
-        })
+        retrieved.append(
+            {
+                "text": doc,
+                "source": meta.get("source", "unknown"),
+                "chunk_index": meta.get("chunk_index", -1),
+            }
+        )
 
     return retrieved
+
 
 def build_messages(user_question: str, retrieved_chunks):
     context_parts = []
@@ -162,18 +167,18 @@ Contexte récupéré :
         {"role": "user", "content": user_message},
     ]
 
+
 def answer_with_rag(user_question: str):
     retrieved_chunks = search_relevant_chunks(user_question, top_k=4)
     messages = build_messages(user_question, retrieved_chunks)
 
     response = openai_client.chat.completions.create(
-        model=OPENAI_MODEL,
-        messages=messages,
-        temperature=0.2
+        model=OPENAI_MODEL, messages=messages, temperature=0.2
     )
 
     answer = response.choices[0].message.content
     return answer, retrieved_chunks
+
 
 # =========================
 # SESSION STATE
@@ -191,9 +196,7 @@ with st.sidebar:
     st.header("Import de PDF")
 
     uploaded_files = st.file_uploader(
-        "Ajoute un ou plusieurs PDF",
-        type=["pdf"],
-        accept_multiple_files=True
+        "Ajoute un ou plusieurs PDF", type=["pdf"], accept_multiple_files=True
     )
 
     if uploaded_files:
