@@ -10,9 +10,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pypdf import PdfReader
 
-# =========================
-# CONFIG
-# =========================
+# Config 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
@@ -28,7 +26,7 @@ CHROMA_DIR = DATA_DIR / "chroma"
 PDF_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 
-# INIT Phase - config
+# INIT Phase 
 
 st.set_page_config(page_title="Mini RAG Demo", page_icon=":books:", layout="wide")
 
